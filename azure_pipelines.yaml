@@ -9,6 +9,21 @@ variables:
 
 steps:
 
+# Checkout Source Code
+- checkout: self
+  fetchDepth: 0
+
+# SonarCloud Prepare
+- task: SonarCloudPrepare@3
+  inputs:
+    SonarCloud: 'SonarCloud-Service'
+    organization: 'rahulnavi26'
+    scannerMode: 'CLI'
+    configMode: 'manual'
+    cliProjectKey: 'rahulnavi26_Fastapi_project'
+    cliProjectName: 'Fastapi_project'
+    cliSources: '.'
+
 # Use Python
 - task: UsePythonVersion@0
   inputs:
@@ -21,17 +36,27 @@ steps:
     pip install -r requirements.txt
   displayName: 'Install Dependencies'
 
-# Validate Python Files
+# Validate Python Code
 - script: |
     python -m py_compile main.py
   displayName: 'Validate Python Code'
 
-# Start FastAPI Server Test
+# Test FastAPI Startup
 - script: |
     timeout 10s uvicorn main:app --host 0.0.0.0 --port 8000 || true
   displayName: 'Test FastAPI Startup'
 
-# Publish Project Files
+# SonarCloud Analysis
+- task: SonarCloudAnalyze@3
+  displayName: 'Run SonarCloud Analysis'
+
+# Publish SonarCloud Quality Gate
+- task: SonarCloudPublish@3
+  inputs:
+    pollingTimeoutSec: '300'
+  displayName: 'Publish SonarCloud Results'
+
+# Publish Build Artifacts
 - task: PublishBuildArtifacts@1
   inputs:
     PathtoPublish: '$(Build.SourcesDirectory)'
